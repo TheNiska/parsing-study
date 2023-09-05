@@ -37,7 +37,7 @@ def get_soup(url):
 
 
 def get_tasks_info(url, tasks, page=None):
-    MAX_PAGE = 2
+    MAX_PAGE = 7
     soup = get_soup(url)
     item_class = "b-post__grid"
     works = soup.find_all('div', class_=item_class)
@@ -66,6 +66,7 @@ def main():
     url_2 = "https://www.fl.ru/projects/category/programmirovanie/"
     tasks = []
     get_tasks_info(url_1, tasks)
+    get_tasks_info(url_2, tasks)
     for task in tasks:
         soup = get_soup(task.url)
         main_id = "project_info_" + task.id_
@@ -88,8 +89,17 @@ def main():
         date = date.split('[')[0]
         task.set_date(date)
 
+    counter = {}
     for task in tasks:
-        print(task)
+        if task.sub_category is not None:
+            theme = f"{task.category} // {task.sub_category}"
+            if theme not in counter:
+                counter[theme] = 1
+            else:
+                counter[theme] += 1
+
+    for theme in counter:
+        print(f"{theme:_<60} {counter[theme]}")
 
 
 if __name__ == "__main__":
