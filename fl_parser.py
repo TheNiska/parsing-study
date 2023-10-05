@@ -1,5 +1,7 @@
+import sys
 from bs4 import BeautifulSoup
 import requests
+from utils.util import get_soup
 
 
 class Task:
@@ -26,18 +28,8 @@ class Task:
                f"--------------"
 
 
-def get_soup(url):
-    with open('headers.txt', 'r', encoding='utf-8') as file:
-        user_agent = file.readline()[:-1]
-    headers = {'User-Agent': user_agent}
-
-    html = requests.get(url=url, headers=headers).text
-    soup = BeautifulSoup(html, 'lxml')
-    return soup
-
-
 def get_tasks_info(url, tasks, page=None):
-    MAX_PAGE = 7
+    MAX_PAGE = 2
     soup = get_soup(url)
     item_class = "b-post__grid"
     works = soup.find_all('div', class_=item_class)
