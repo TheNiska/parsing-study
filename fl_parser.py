@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import requests
 from utils.util import get_soup
 
+CAT_CLASSES = ['text-5 mb-4 b-layout__txt_padbot_20', 'text-5 mb-4']
+MAX_PAGE = 2
+
 
 class Task:
     def __init__(self, name=None, link=None, url=None, id_=None, descr=None,
@@ -27,9 +30,13 @@ class Task:
                f"{self.sub_category}\n{self.id_}\n" \
                f"--------------"
 
+    def __str__(self):
+        return f"Name: {self.name}\nCategory: {self.category}\n" \
+               f"Sub_category: {self.sub_category}\nLink: {self.link}\n" \
+               f"Id: {self.id_}\nDate: {self.date}"
+
 
 def get_tasks_info(url, tasks, page=None):
-    MAX_PAGE = 2
     soup = get_soup(url)
     item_class = "b-post__grid"
     works = soup.find_all('div', class_=item_class)
@@ -68,7 +75,12 @@ def main():
         main = main_wrapper.find('div', class_="b-layout")
         descr = main.find('div', id=text_id).text.strip()
         task.descr = descr
-        categories = main.find('div', class_="text-5 mb-4 b-layout__txt_padbot_20")
+
+        for cat_class in CAT_CLASSES:
+            categories = main.find('div', cat_class)
+            if categories:
+                break
+
         if categories:
             categories = categories.text
             category, sub_category = categories.split(' / ')
@@ -90,8 +102,9 @@ def main():
             else:
                 counter[theme] += 1
 
-    for theme in counter:
-        print(f"{theme:_<60} {counter[theme]}")
+    for task in tasks:
+        print(str(task))
+        print()
 
 
 if __name__ == "__main__":
