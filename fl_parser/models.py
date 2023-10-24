@@ -1,27 +1,20 @@
-class Task:
-    def __init__(self, name=None, link=None, url=None, id_=None, descr=None,
-                 category=None, sub_category=None):
-        self.name = name
-        self.link = link
-        self.url = url
-        self.id_ = id_
-        self.descr = descr
-        self.category = category
-        self.sub_category = sub_category
+from pydantic.dataclasses import dataclass
+from datetime import datetime
 
-    def set_date(self, str_date):
-        days, hours = str_date.split('|')
-        day, month, year = map(int, days.split('.'))
-        hour, minute = map(int, hours.split(':'))
-        self.date = {'day': day, 'month': month, 'year': year,
-                     'hour': hour, 'minute': minute}
 
-    def __repr__(self):
-        return f"Task ---------\n{self.name}\n{self.category}\n" \
-               f"{self.sub_category}\n{self.id_}\n" \
-               f"--------------"
+@dataclass(kw_only=True)
+class TaskItem:
+    fl_id: int
+    title: str
+    link: str
+    descr: str
+    category: str
+    sub_category: str
+    date: datetime
 
-    def __str__(self):
-        return f"Name: {self.name}\nCategory: {self.category}\n" \
-               f"Sub_category: {self.sub_category}\nLink: {self.link}\n" \
-               f"Id: {self.id_}\nDate: {self.date}\nDescr: {self.descr}"
+    def __post_init__(self):
+        self.title = self.title.strip()
+        self.link = self.link.strip()
+        self.descr = self.descr.strip()
+        self.category = self.category.strip()
+        self.sub_category = self.sub_category.strip()
