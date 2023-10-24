@@ -47,11 +47,12 @@ def main():
         html = get_html(link)
         htmls.append(html)
 
+    task_items = []
     for html in htmls:
-        task_items = parse_items(html)
+        task_items.extend(parse_items(html))
         # doing something
 
-    # print(task_items)
+    print(len(task_items))
 
 
 if __name__ == "__main__":
