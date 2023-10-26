@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from models import TaskItem
 from pydantic import ValidationError
+from database import add_sub_categories
 
 
 def parse_items(html: str) -> list[TaskItem]:
@@ -52,7 +53,8 @@ def main():
         task_items.extend(parse_items(html))
         # doing something
 
-    print(len(task_items))
+    cat_set = {(el.category, el.sub_category) for el in task_items}
+    add_sub_categories(cat_set)
 
 
 if __name__ == "__main__":

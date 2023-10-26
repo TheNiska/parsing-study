@@ -13,8 +13,8 @@ class TaskItem:
     date: datetime
 
     def __post_init__(self):
-        self.title = self.title.strip()
+        self.title = self.title.strip().lower()
         self.link = self.link.strip()
-        self.descr = self.descr.strip()
+        self.descr = self.descr.strip().lower()
         self.category = self.category.strip()
         self.sub_category = self.sub_category.strip()
