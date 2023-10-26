@@ -51,7 +51,6 @@ def main():
     task_items = []
     for html in htmls:
         task_items.extend(parse_items(html))
-        # doing something
 
     cat_set = {(el.category, el.sub_category) for el in task_items}
     add_sub_categories(cat_set)

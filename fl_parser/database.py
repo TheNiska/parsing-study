@@ -68,11 +68,17 @@ def add_sub_categories(cur, cat_set: set[tuple[str, str]]) -> None:
     categories_diff = cats_to_check.difference(categories_in_db.values())
 
     if len(categories_diff) != 0:
-        query = get_add_categories_query(categories_diff)
-        print(query)
+        q = get_add_categories_query(categories_diff)
+        cur.execute(q)
+        cur.execute("SELECT * FROM categories")
+        categories_in_db = dict(cur.fetchall())
 
     if len(sub_categories_diff) != 0:
+        # reversing k, v in the dictionary
+        categories_in_db = {k: v for v, k in categories_in_db.items()}
 
+        q = get_add_sub_categories_query(sub_categories_diff, categories_in_db)
+        cur.execute(q)
 
 
 def get_add_categories_query(categories: set[str]) -> str:
@@ -85,11 +91,19 @@ def get_add_categories_query(categories: set[str]) -> str:
     q = f"INSERT INTO {table_name} ({columns_str}) VALUES {values}"
     return q
 
-def get_add_sub_categories_query(categories: set[str]) -> str:
-    columns = ('name',)
-    table_name = 'categories'
 
-    values = "('" + "'), ('".join(categories) + "')"
+def get_add_sub_categories_query(
+        sub_categories: set[tuple[str, str]],
+        categories: dict[str, int]
+        ) -> str:
+
+    sub_categories = {(sub_cat, categories[cat])
+                      for cat, sub_cat in sub_categories}
+
+    columns = ('name', 'category_id')
+    table_name = 'sub_categories'
+
+    values = str(sub_categories)[1:-1]
     columns_str = ', '.join(columns)
 
     q = f"INSERT INTO {table_name} ({columns_str}) VALUES {values}"
@@ -106,4 +120,4 @@ def execute_query(cur, query: str) -> None:
 
 
 if __name__ == '__main__':
-    add_sub_categories({('Разработка сайтов', 'Сайт «под ключ»')})
+    add_sub_categories({('Разработка сайтов', 'Сайт «под ключ»'), ('Письмо', 'Написание рассказов')})
