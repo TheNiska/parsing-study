@@ -1,5 +1,6 @@
 import mysql.connector
 from mysql.connector import errorcode
+import logging
 
 
 def manage_connection(func):
@@ -54,30 +55,32 @@ def get_sub_categories(cur):
 @manage_connection
 def add_sub_categories(cur, cat_set: set[tuple[str, str]]) -> None:
     cur.execute("SELECT * FROM categories")
-    categories_in_db = dict(cur.fetchall())
+    cats_in_db = dict(cur.fetchall())
 
     cur.execute("SELECT name, category_id FROM sub_categories")
-    sub_categories_in_db = {(categories_in_db[cat_id], name)
-                            for name, cat_id in cur.fetchall()}
+    sub_cats_in_db = {
+        (cats_in_db[cat_id], name)
+        for name, cat_id in cur.fetchall()
+    }
 
     # sub-categories that don't exist in database
-    sub_categories_diff = cat_set.difference(sub_categories_in_db)
-    cats_to_check = {category for category, _ in sub_categories_diff}
+    sub_cats_diff = cat_set.difference(sub_cats_in_db)
+    cats_to_check = {cat for cat, _ in sub_cats_diff}
 
     # categories that don't exist in database
-    categories_diff = cats_to_check.difference(categories_in_db.values())
+    cats_diff = cats_to_check.difference(cats_in_db.values())
 
-    if len(categories_diff) != 0:
-        q = get_add_categories_query(categories_diff)
+    if len(cats_diff) != 0:
+        q = get_add_categories_query(cats_diff)
         cur.execute(q)
         cur.execute("SELECT * FROM categories")
-        categories_in_db = dict(cur.fetchall())
+        cats_in_db = dict(cur.fetchall())  # updating
 
-    if len(sub_categories_diff) != 0:
+    if len(sub_cats_diff) != 0:
         # reversing k, v in the dictionary
-        categories_in_db = {k: v for v, k in categories_in_db.items()}
+        cats_in_db = {k: v for v, k in cats_in_db.items()}
 
-        q = get_add_sub_categories_query(sub_categories_diff, categories_in_db)
+        q = get_add_sub_categories_query(sub_cats_diff, cats_in_db)
         cur.execute(q)
 
 
@@ -97,8 +100,10 @@ def get_add_sub_categories_query(
         categories: dict[str, int]
         ) -> str:
 
-    sub_categories = {(sub_cat, categories[cat])
-                      for cat, sub_cat in sub_categories}
+    sub_categories = {
+        (sub_cat, categories[cat])
+        for cat, sub_cat in sub_categories
+    }
 
     columns = ('name', 'category_id')
     table_name = 'sub_categories'
@@ -120,4 +125,4 @@ def execute_query(cur, query: str) -> None:
 
 
 if __name__ == '__main__':
-    add_sub_categories({('Разработка сайтов', 'Сайт «под ключ»'), ('Письмо', 'Написание рассказов')})
+    pass
