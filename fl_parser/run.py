@@ -49,6 +49,7 @@ def parse_items(html: str) -> list[TaskItem]:
 
 
 def main():
+    lg.info("Initiating parsing...")
     CATEGORIES = {'programming': 5, 'webdev': 2}
 
     htmls = []
@@ -62,7 +63,7 @@ def main():
         task_items.extend(parse_items(html))
 
     cat_set = {(el.category, el.sub_category) for el in task_items}
-    add_sub_categories(cat_set)
+    add_sub_categories(cat_set, task_items)
 
 
 if __name__ == "__main__":

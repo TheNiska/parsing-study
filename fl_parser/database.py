@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import errorcode
-import logging
+from models import TaskItem
+import logging as lg
 
 
 def manage_connection(func):
@@ -15,11 +16,11 @@ def manage_connection(func):
         cnx = mysql.connector.connect(**cfg)
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
+            lg.error(err)
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            lg.error(err)
         else:
-            print(err)
+            lg.error(err)
         return
 
     cur = cnx.cursor()
@@ -30,11 +31,9 @@ def manage_connection(func):
         try:
             result = func(cur, *args, **kwargs)
         except Exception as err:
-            print('Error in function!')
-            print(err)
+            lg.error("Error in function. ", err)
         else:
             cnx.commit()
-            print('Done!')
         finally:
             cur.close()
             cnx.close()
@@ -45,22 +44,22 @@ def manage_connection(func):
 
 
 @manage_connection
-def get_sub_categories(cur):
-    cur.execute("select * from categories")
-    for items in cur:
-        print(items)
-    return 1
+def add_sub_categories(
+        cur,
+        cat_set: set[tuple[str, str]],
+        items: list[TaskItem]
+        ) -> None:
 
+    QUERY_CATEGORIES = "SELECT id, name FROM categories"
+    QUERY_SUB_CATEGORIES = "SELECT id, name, category_id FROM sub_categories"
 
-@manage_connection
-def add_sub_categories(cur, cat_set: set[tuple[str, str]]) -> None:
-    cur.execute("SELECT * FROM categories")
+    cur.execute(QUERY_CATEGORIES)
     cats_in_db = dict(cur.fetchall())
 
-    cur.execute("SELECT name, category_id FROM sub_categories")
+    cur.execute(QUERY_SUB_CATEGORIES)
     sub_cats_in_db = {
         (cats_in_db[cat_id], name)
-        for name, cat_id in cur.fetchall()
+        for _, name, cat_id in cur.fetchall()
     }
 
     # sub-categories that don't exist in database
@@ -71,17 +70,41 @@ def add_sub_categories(cur, cat_set: set[tuple[str, str]]) -> None:
     cats_diff = cats_to_check.difference(cats_in_db.values())
 
     if len(cats_diff) != 0:
-        q = get_add_categories_query(cats_diff)
-        cur.execute(q)
-        cur.execute("SELECT * FROM categories")
+        lg.info(f"Adding categories: {[x for x in cats_diff]}")
+        cur.execute(get_add_categories_query(cats_diff))
+        cur.execute(QUERY_CATEGORIES)
         cats_in_db = dict(cur.fetchall())  # updating
 
     if len(sub_cats_diff) != 0:
-        # reversing k, v in the dictionary
-        cats_in_db = {k: v for v, k in cats_in_db.items()}
-
-        q = get_add_sub_categories_query(sub_cats_diff, cats_in_db)
+        lg.info(f"Adding subcategories: {[x for x in sub_cats_diff]}")
+        reversed_cats = {k: v for v, k in cats_in_db.items()}
+        q = get_add_sub_categories_query(sub_cats_diff, reversed_cats)
         cur.execute(q)
+
+    # Updating sub categories and creating a dictionary of
+    # type: tuple(category_name, sub_category_name) => sub_category_id
+    cur.execute(QUERY_SUB_CATEGORIES)
+    categories_map = {
+        (cats_in_db[cat_id], subcat_name): subcat_id
+        for subcat_id, subcat_name, cat_id in cur.fetchall()
+    }
+
+    # Inserting items list to database
+    TBL_NAME = "fl_items"
+    cols = ', '.join(
+        ('id', 'title', 'link', 'description', 'date', 'sub_category_id')
+    )
+
+    vals = str(
+        [
+            it.to_tuple(categories_map[(it.category, it.sub_category)])
+            for it in items
+        ]
+    )[1:-1]
+
+    add_items_query = f"INSERT INTO {TBL_NAME} ({cols}) VALUES {vals}"
+    lg.info(f"Inserting {len(items)} new fl items")
+    cur.execute(add_items_query)
 
 
 def get_add_categories_query(categories: set[str]) -> str:
