@@ -44,11 +44,15 @@ def manage_connection(func):
 
 
 @manage_connection
-def add_sub_categories(
+def add_items_to_db(
         cur,
         cat_set: set[tuple[str, str]],
         items: list[TaskItem]
         ) -> None:
+    '''
+    Adds parsed items to DB. Before adding them, checks if there are new
+    categories or sub-categories to add and adds them if it's needed
+    '''
 
     QUERY_CATEGORIES = "SELECT id, name FROM categories"
     QUERY_SUB_CATEGORIES = "SELECT id, name, category_id FROM sub_categories"

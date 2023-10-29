@@ -63,7 +63,7 @@ def main():
         task_items.extend(parse_items(html))
 
     cat_set = {(el.category, el.sub_category) for el in task_items}
-    add_sub_categories(cat_set, task_items)
+    add_items_to_db(cat_set, task_items)
 
 
 if __name__ == "__main__":
