@@ -3,10 +3,12 @@ from mysql.connector import errorcode
 from models import TaskItem
 import logging as lg
 
+FNAME = "pass.txt"
+CAT_TBL = 'categories'
+SUB_CAT_TBL = 'sub_categories'
+
 
 def manage_connection(func):
-    FNAME = "pass.txt"
-
     with open(FNAME, 'r') as file:
         lines = file.read().splitlines()
 
@@ -54,8 +56,8 @@ def add_items_to_db(
     categories or sub-categories to add and adds them if it's needed
     '''
 
-    QUERY_CATEGORIES = "SELECT id, name FROM categories"
-    QUERY_SUB_CATEGORIES = "SELECT id, name, category_id FROM sub_categories"
+    QUERY_CATEGORIES = f"SELECT id, name FROM {CAT_TBL}"
+    QUERY_SUB_CATEGORIES = f"SELECT id, name, category_id FROM {SUB_CAT_TBL}"
 
     cur.execute(QUERY_CATEGORIES)
     cats_in_db = dict(cur.fetchall())
@@ -75,12 +77,17 @@ def add_items_to_db(
 
     if len(cats_diff) != 0:
         lg.info(f"Adding categories: {[x for x in cats_diff]}")
-        cur.execute(get_add_categories_query(cats_diff))
+
+        values_str = ', '.join([f"(category!r)" for category in cats_diff])
+        query = f"INSERT INTO {CAT_TBL} (name) VALUES {values_str}"
+        cur.execute(query)
+
         cur.execute(QUERY_CATEGORIES)
         cats_in_db = dict(cur.fetchall())  # updating
 
     if len(sub_cats_diff) != 0:
         lg.info(f"Adding subcategories: {[x for x in sub_cats_diff]}")
+
         reversed_cats = {k: v for v, k in cats_in_db.items()}
         q = get_add_sub_categories_query(sub_cats_diff, reversed_cats)
         cur.execute(q)
