@@ -6,6 +6,13 @@ import logging as lg
 FNAME = "pass.txt"
 CAT_TBL = 'categories'
 SUB_CAT_TBL = 'sub_categories'
+ITEMS_TBL = 'fl_items'
+
+QUERY_CATEGORIES = f"SELECT id, name FROM {CAT_TBL}"
+QUERY_SUB_CATEGORIES = f"SELECT id, name, category_id FROM {SUB_CAT_TBL}"
+QUERY_ITEMS_ID = f"SELECT id from {ITEMS_TBL}"
+
+QUERY_COUNT = f"SELECT COUNT(*) FROM {ITEMS_TBL}"
 
 
 def manage_connection(func):
@@ -56,9 +63,6 @@ def add_items_to_db(
     categories or sub-categories to add and adds them if it's needed
     '''
 
-    QUERY_CATEGORIES = f"SELECT id, name FROM {CAT_TBL}"
-    QUERY_SUB_CATEGORIES = f"SELECT id, name, category_id FROM {SUB_CAT_TBL}"
-
     cur.execute(QUERY_CATEGORIES)
     cats_in_db = dict(cur.fetchall())
 
@@ -100,8 +104,10 @@ def add_items_to_db(
         for subcat_id, subcat_name, cat_id in cur.fetchall()
     }
 
-    # Inserting items list to database
-    TBL_NAME = "fl_items"
+    # Inserting items list to database ---------------------------------------
+    cur.execute(QUERY_COUNT)
+    was_rows = cur.fetchone()[0]
+
     cols = ', '.join(
         ('id', 'title', 'link', 'description', 'date', 'sub_category_id')
     )
@@ -113,9 +119,14 @@ def add_items_to_db(
         ]
     )[1:-1]
 
-    add_items_query = f"INSERT INTO {TBL_NAME} ({cols}) VALUES {vals}"
+    add_items_query = f"INSERT IGNORE INTO {ITEMS_TBL} ({cols}) VALUES {vals}"
     lg.info(f"Inserting {len(items)} new fl items")
     cur.execute(add_items_query)
+
+    cur.execute(QUERY_COUNT)
+    new_rows = cur.fetchone()[0] - was_rows
+    lg.info(f"{new_rows} new rows has been inserted")
+    # ------------------------------------------------------------------------
 
 
 def get_add_categories_query(categories: set[str]) -> str:
@@ -151,12 +162,12 @@ def get_add_sub_categories_query(
 
 @manage_connection
 def execute_query(cur, query: str) -> None:
-    print(query)
-    res = cur.execute(query)
-    cur.execute("select * from categories")
-    for row in cur:
-        print(row)
+    cur.execute(query)
+    res = cur.fetchone()[0]
+    return res
 
 
 if __name__ == '__main__':
-    pass
+    res = execute_query(QUERY_COUNT)
+    print(res)
+    print(type(res))

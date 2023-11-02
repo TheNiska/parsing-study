@@ -4,7 +4,7 @@ from util import get_html
 from datetime import datetime
 from models import TaskItem
 from pydantic import ValidationError
-from database import add_sub_categories
+from database import add_items_to_db
 
 
 def parse_items(html: str) -> list[TaskItem]:
